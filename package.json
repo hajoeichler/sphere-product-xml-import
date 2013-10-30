@@ -29,7 +29,8 @@
   },
   "dependencies": {
     "request": "2.9.x",
-    "randomstring": "1.0.x"
+    "randomstring": "1.0.x",
+    "jsondiffpatch": "~0.0.8"
   },
   "devDependencies": {
     "underscore": "~1.5.2",

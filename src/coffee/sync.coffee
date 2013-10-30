@@ -1,4 +1,5 @@
-_ = require('underscore')._
+_ = require("underscore")._
+jsondiffpatch = require("jsondiffpatch")
 
 # Define Sync object
 exports.Sync = (options)-> @_options = options
@@ -18,6 +19,6 @@ exports.Sync.prototype.start = (data, callback)->
   callback()
 
 
-exports.Sync.prototype.diff = (old_obj, new_obj)-> #noop
+exports.Sync.prototype.diff = (old_obj, new_obj)-> jsondiffpatch.diff(old_obj, new_obj)
 
 exports.Sync.prototype.builActions = -> #noop

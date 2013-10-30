@@ -30,3 +30,29 @@ describe "Sync.start", ->
     waitsFor(callMe, "Sync never completed", 10000)
     runs ->
       expect(callbackExecuted).toBe true
+
+describe "Sync.diff", ->
+  beforeEach ->
+    @sync = new Sync()
+
+  it "should diff products", ->
+    OLD_PRODUCT =
+      id: "123"
+      name:
+        en: "Foo"
+      slug:
+        en: "foo"
+    NEW_PRODUCT =
+      id: "123"
+      name:
+        en: "Boo"
+      slug:
+        en: "boo"
+
+    delta = @sync.diff(OLD_PRODUCT, NEW_PRODUCT)
+    expected_delta =
+      name:
+        en: ["Foo", "Boo"]
+      slug:
+        en: ["foo", "boo"]
+    expect(delta).toEqual expected_delta
