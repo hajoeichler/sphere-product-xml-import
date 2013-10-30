@@ -1,0 +1,1 @@
+exports.Sync = (data, callback)-> # noop

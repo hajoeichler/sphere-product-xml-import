@@ -1,0 +1,45 @@
+{
+  "name": "sphere-product-sync",
+  "description": "Quick and easy way to sync your SPHERE.IO Products.",
+  "version": "0.0.1",
+  "homepage": "https://github.com/emmenko/sphere-product-sync",
+  "author": {
+    "name": "Nicola Molinari",
+    "email": "nicola.molinari@commercetools.de"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/emmenko/sphere-product-sync.git"
+  },
+  "bugs": {
+    "url": "https://github.com/emmenko/sphere-product-sync/issues"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/emmenko/sphere-product-sync/blob/master/LICENSE-MIT"
+    }
+  ],
+  "main": "main.js",
+  "engines": {
+    "node": ">= 0.8.0"
+  },
+  "scripts": {
+    "test": "grunt test"
+  },
+  "dependencies": {
+    "request": "2.9.x",
+    "randomstring": "1.0.x"
+  },
+  "devDependencies": {
+    "grunt": "~0.4.1",
+    "grunt-cli": "~0.1.9",
+    "grunt-coffeelint": "~0.0.7",
+    "grunt-contrib-clean": "~0.5.0",
+    "grunt-contrib-concat": "~0.3.0",
+    "grunt-contrib-coffee": "~0.7.0",
+    "grunt-contrib-watch": "~0.5.3",
+    "grunt-jasmine-node": "~0.1.0"
+  },
+  "keywords": []
+}
