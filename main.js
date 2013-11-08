@@ -1,1 +1,1 @@
-exports.Sync = require('./lib/sync').Sync
+exports.XmlImport = require('./lib/xmlimport').XmlImport
