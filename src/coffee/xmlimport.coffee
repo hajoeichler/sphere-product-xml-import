@@ -8,6 +8,8 @@ Q = require('q')
 # Define XmlImport object
 exports.XmlImport = (options)->
   @_options = options
+  @rest = new Rest Config
+  return
 
 exports.XmlImport.prototype.process = (data, callback)->
   throw new Error 'JSON Object required' unless _.isObject data
