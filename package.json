@@ -32,7 +32,10 @@
     "xml2js": "0.2.8"
   },
   "devDependencies": {
+    "sphere-product-sync": "*",
+    "sphere-node-connect": "*",
     "underscore": "~1.5.2",
+    "q": "~0.9.7",
     "grunt": "~0.4.1",
     "grunt-coffeelint": "~0.0.7",
     "grunt-contrib-clean": "~0.5.0",
