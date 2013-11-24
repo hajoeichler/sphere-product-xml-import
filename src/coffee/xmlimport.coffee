@@ -3,10 +3,11 @@ _ = require('underscore')._
 Config = require('../config').config
 Rest = require('sphere-node-connect').Rest
 OAuth2 = require('sphere-node-connect').OAuth2
-#Q = require('q')
+Q = require('q')
 
 # Define XmlImport object
-exports.XmlImport = (options)-> @_options = options
+exports.XmlImport = (options)->
+  @_options = options
 
 exports.XmlImport.prototype.process = (data, callback)->
   throw new Error 'JSON Object required' unless _.isObject data
@@ -32,12 +33,20 @@ exports.XmlImport.prototype.mapProducts = (xmljs, callback)->
   variants = {} # uid -> [variant]
   images = {} # uid: variantId -> [images]
   varianId = 0
+
+  productTypeId = 'TODO'
+  taxCategoryId = 'TODO'
+  customerGroupId = 'TODO'
+
+  @productType().then(@taxCategory()).then(@customerGroup()).then (pId)->
+    console.log pId
+
   for k,row of xmljs.row
     v =
       id: 0
     @mapCategories(row, v)
     @mapAttributes(row, v)
-    @mapPrices(row, v)
+    @mapPrices(row, v, customerGroupId)
     img = @mapImages(row)
 
     if @isVariant(row)
@@ -53,10 +62,10 @@ exports.XmlImport.prototype.mapProducts = (xmljs, callback)->
       p =
         productType:
           typeId: 'product-type'
-          id: @productTypeId()
+          id: productTypeId
         taxCategory:
           typeId: 'tax-category'
-          id: @taxCategoryId()
+          id: taxCategoryId
         name: @lang(n)
         slug: @lang(@slugify(n))
         description: @lang(@val(row, 'description', ''))
@@ -127,7 +136,6 @@ exports.XmlImport.prototype.mapAttributes = (row, j)->
     d =
       name: trans,
       value: v
-    console.log d
     j.attributes.push d
 
   numbers = [ 'hight', 'length', 'wide' ]
@@ -137,7 +145,6 @@ exports.XmlImport.prototype.mapAttributes = (row, j)->
     d =
       name: n
       value: parseInt v, 10
-    console.log d
     j.attributes.push d
 
   enums =
@@ -153,10 +160,9 @@ exports.XmlImport.prototype.mapAttributes = (row, j)->
     d =
       name: trans,
       value: v
-    console.log d
     j.attributes.push d
 
-exports.XmlImport.prototype.mapPrices = (row, j)->
+exports.XmlImport.prototype.mapPrices = (row, j, customerGroupId)->
   j.prices = []
   currency = 'EUR'
   country = 'DE'
@@ -173,7 +179,7 @@ exports.XmlImport.prototype.mapPrices = (row, j)->
       currencyCode: currency
     customerGroup:
       typeId: 'customer-group'
-      id: @customerGroupId()
+      id: customerGroupId
   j.prices.push p
 
   return if @val(row, 'specialpriceflag', '') is '0'
@@ -191,11 +197,29 @@ exports.XmlImport.prototype.isVariant = (row)->
     return false
   true
 
-exports.XmlImport.prototype.productTypeId =->
-  'TODO'
+exports.XmlImport.prototype.productType =->
+  rest = new Rest Config
+  deferred = Q.defer()
+  rest.GET "/product-types", (error, response, body)->
+    #console.log("PT: %j", body)
+    id = JSON.parse(body).results[0].id
+    deferred.resolve id
+  deferred.promise
 
-exports.XmlImport.prototype.taxCategoryId =->
-  'TODO'
+exports.XmlImport.prototype.taxCategory =->
+  rest = new Rest Config
+  deferred = Q.defer()
+  rest.GET "/tax-categories", (error, response, body)->
+    #console.log("TC: %j", body)
+    id = JSON.parse(body).results[0].id
+    deferred.resolve id
+  deferred.promise
 
-exports.XmlImport.prototype.customerGroupId =->
-  'TODO'
+exports.XmlImport.prototype.customerGroup =->
+  rest = new Rest Config
+  deferred = Q.defer()
+  rest.GET "/customer-groups", (error, response, body)->
+    id = JSON.parse(body).results[0].id
+    #console.log("CG: %j", body)
+    deferred.resolve id
+  deferred.promise
