@@ -1,0 +1,23 @@
+<row>
+  <uid>123</uid>
+  <name>Some long name with "chars"</name>
+  <descriptionVariant>Short name</descriptionVariant>
+  <codeMaterial>42</codeMaterial>
+  <descriptionMaterial>Nice material</descriptionMaterial>
+  <codecolorname>7</codecolorname>
+  <descriptionColorname>Olive</descriptionColorname>
+  <codeFilterColor>99</codeFilterColor>
+  <descriptionFilterColor>Black</descriptionFilterColor>
+  <codeStyle>1</codeStyle>
+  <descriptionFilterStyle>Cool</descriptionFilterStyle>
+  <codeFabrication>2</codeFabrication>
+  <descriptionFabrication>hand made</descriptionFabrication>
+  <priceb2c>99.99</priceb2c>
+  <priceb2b>75.000000</priceb2b>
+  <codeTaxGroup>1</codeTaxGroup>
+  <descriptionTaxGroup>19.000</descriptionTaxGroup>
+  <ean>123</ean>
+  <bulkygoods>1</bulkygoods>
+  <specialpriceflag>1</specialpriceflag>
+  <specialprice>89.99</specialprice>
+</row>
