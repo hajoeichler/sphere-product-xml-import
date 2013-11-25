@@ -40,8 +40,13 @@ exports.XmlImport.prototype.createOrUpdate = (data, callback)->
         callback(diffResult)
       else
         @rest.POST "/products", JSON.stringify(p), (error, response, body)->
-          console.log("BODY %j", body)
-          callback(body)
+          if response.statusCode is 201
+            d =
+              message:
+                status: true
+            callback d
+          else
+            returnError 'Problem on creating product.', callback
 
 exports.XmlImport.prototype.getAndFix = (raw)->
   #TODO: decode base64 - make configurable for testing
