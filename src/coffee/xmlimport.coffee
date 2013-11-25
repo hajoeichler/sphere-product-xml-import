@@ -240,8 +240,11 @@ exports.XmlImport.prototype.isVariant = (row)->
 exports.XmlImport.prototype.products = ->
   deferred = Q.defer()
   @rest.GET "/products", (error, response, body)->
-    products = JSON.parse(body).results
-    deferred.resolve products
+    if response.statusCode is 200
+      products = JSON.parse(body).results
+      deferred.resolve products
+    else
+      deferred.reject new Error 'Problem on fetching products'
   deferred.promise
 
 exports.XmlImport.prototype.productType = ->
@@ -261,7 +264,7 @@ exports.XmlImport.prototype.getFirst = (endpoint) ->
       if res.length > 0
         deferred.resolve res[0].id
       else
-      deferred.resolve new Error "There are no entries at #{endpoint}"
+      deferred.reject new Error "There are no entries at #{endpoint}"
     else
-      deferred.resolve new Error "Problem on getting #{endpoint}"
+      deferred.reject new Error "Problem on getting #{endpoint}"
   deferred.promise
