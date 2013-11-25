@@ -3,6 +3,7 @@
   "description": "Import your products into SPHERE.IO from XML.",
   "version": "0.0.1",
   "homepage": "https://github.com/hajoeichler/sphere-product-xml-import",
+  "private": true,
   "author": {
     "name": "Hajo Eichler",
     "email": "hajo.eichler@commercetools.de"
