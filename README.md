@@ -5,9 +5,12 @@ This repository contains a mapping compontent to translate products from XML dat
 ## Getting Started
 Install the module with: `npm install sphere-product-xml-import`
 
+Put your SPHERE.IO credentials into `config.js`. To generate it just execute `./create_config.sh`.
+
 ```javascript
 var product_xml_import = require('sphere-product-xml-import').XmlImport;
 ```
+
 
 ## Documentation
 _(Coming soon)_
