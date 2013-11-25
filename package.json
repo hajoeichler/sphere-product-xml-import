@@ -28,10 +28,9 @@
     "test": "grunt test"
   },
   "dependencies": {
-    "request": "2.9.x",
-    "xml2js": "0.2.8",
-    "sphere-product-sync": "*",
-    "sphere-node-connect": "*",
+    "xml2js": "~0.4.0",
+    "sphere-product-sync": "~0.1.2",
+    "sphere-node-connect": "~0.1.0",
     "underscore": "~1.5.2",
     "q": "~0.9.7"
   },
