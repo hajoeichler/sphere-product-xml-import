@@ -107,23 +107,23 @@ exports.XmlImport.prototype.mapCategories = (row, j)->
 exports.XmlImport.prototype.mapAttributes = (row, j)->
   j.attributes = []
   attribs =
-    uid: '',
-    size: '',
-    codeMaterial: '',
-    descriptionMaterial: '',
-    codecolorname: 'codeColorname',
-    descriptionColorname: '',
-    codeFilterColor: '',
-    descriptionFilterColor: '',
-    codeStyle: '',
-    descriptionFilterStyle: '',
-    codeFabrication: '',
-    descriptionFabrication: '',
-    CodeSerie: 'codeSerie',
-    descriptionSerie: '',
-# TODO    codeCareinstruction: '',
-# TODO    descriptionCareinstruction: '',
-    Theme: 'theme',
+    uid: ''
+    size: ''
+    codeMaterial: ''
+    descriptionMaterial: ''
+    codecolorname: 'codeColorname'
+    descriptionColorname: ''
+    codeFilterColor: ''
+    descriptionFilterColor: ''
+    codeStyle: ''
+    descriptionFilterStyle: ''
+    codeFabrication: ''
+    descriptionFabrication: ''
+    CodeSerie: 'codeSerie'
+    descriptionSerie: ''
+# TODO    codeCareinstruction: ''
+# TODO    descriptionCareinstruction: ''
+    Theme: 'theme'
     ean: ''
 
   for orig, trans of attribs
@@ -131,7 +131,7 @@ exports.XmlImport.prototype.mapAttributes = (row, j)->
     v = @val(row, orig, '')
     continue unless v.length > 0
     d =
-      name: trans,
+      name: trans
       value: v
     j.attributes.push d
 
@@ -145,9 +145,9 @@ exports.XmlImport.prototype.mapAttributes = (row, j)->
     j.attributes.push d
 
   enums =
-    bulkygoods: '',
-    specialpriceflag: 'salesprice',
-# TODO    discountable: 'discountable',
+    bulkygoods: ''
+    specialpriceflag: 'salesprice'
+# TODO    discountable: 'discountable'
     Highlight: 'highlighted'
 
   for orig,trans of enums
@@ -155,7 +155,7 @@ exports.XmlImport.prototype.mapAttributes = (row, j)->
     v = 'NO'
     v = 'YES' if @val(row, orig, '') == '1'
     d =
-      name: trans,
+      name: trans
       value: v
     j.attributes.push d
 
@@ -183,7 +183,7 @@ exports.XmlImport.prototype.mapPrices = (row, j, customerGroupId)->
   p =
     value:
       centAmount: parseInt @val(row, 'specialprice', ''), 10
-      currencyCode: currency,
+      currencyCode: currency
     country: country
   j.prices.push p
 
@@ -194,7 +194,7 @@ exports.XmlImport.prototype.isVariant = (row)->
     return false
   true
 
-exports.XmlImport.prototype.productType =->
+exports.XmlImport.prototype.productType = ->
   deferred = Q.defer()
   @rest.GET "/product-types", (error, response, body)->
     #console.log("PT: %j", body)
@@ -202,7 +202,7 @@ exports.XmlImport.prototype.productType =->
     deferred.resolve id
   deferred.promise
 
-exports.XmlImport.prototype.taxCategory =->
+exports.XmlImport.prototype.taxCategory = ->
   deferred = Q.defer()
   @rest.GET "/tax-categories", (error, response, body)->
     #console.log("TC: %j", body)
@@ -210,7 +210,7 @@ exports.XmlImport.prototype.taxCategory =->
     deferred.resolve id
   deferred.promise
 
-exports.XmlImport.prototype.customerGroup =->
+exports.XmlImport.prototype.customerGroup = ->
   deferred = Q.defer()
   @rest.GET "/customer-groups", (error, response, body)->
     id = JSON.parse(body).results[0].id
