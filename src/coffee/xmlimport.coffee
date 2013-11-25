@@ -2,7 +2,7 @@ _ = require('underscore')._
 {parseString} = require 'xml2js'
 Config = require('../config').config
 Rest = require('sphere-node-connect').Rest
-Sync = require("sphere-product-sync").Sync
+Sync = require('sphere-product-sync').Sync
 Q = require('q')
 
 # Define XmlImport object
@@ -19,7 +19,7 @@ exports.XmlImport.prototype.process = (data, callback)->
   if data.attachments
     for k,v of data.attachments
       @transform @getAndFix(v), (data)=>
-        @createOrUpdate(data, callback)
+        @createOrUpdate data, callback
   else
     @returnError 'No products given', callback
 
@@ -37,7 +37,7 @@ exports.XmlImport.prototype.createOrUpdate = (data, callback)->
     @sync.start p, (diffResult)=>
       console.log "SYNC %j", diffResult
       if diffResult.status
-        callback(diffResult)
+        callback diffResult
       else
         @rest.POST "/products", JSON.stringify(p), (error, response, body)->
           if response.statusCode is 201
@@ -74,12 +74,12 @@ exports.XmlImport.prototype.mapProducts = (xmljs, callback)->
     for k,row of xmljs.row
       v =
         id: 0
-      @mapCategories(row, v)
-      @mapAttributes(row, v)
-      @mapPrices(row, v, customerGroupId)
-      img = @mapImages(row)
+      @mapCategories row, v
+      @mapAttributes row, v
+      @mapPrices row, v, customerGroupId
+      img = @mapImages row
 
-      if @isVariant(row)
+      if @isVariant row
         parentId = row.basisUidartnr
         variants[parentId] = [] if not variants[parentId]
         v.id = variants[parentId].length + 2
@@ -96,8 +96,8 @@ exports.XmlImport.prototype.mapProducts = (xmljs, callback)->
           taxCategory:
             typeId: 'tax-category'
             id: taxCategoryId
-          name: @lang(n)
-          slug: @lang(@slugify(n))
+          name: @lang n
+          slug: @lang @slugify(n)
           description: @lang(@val(row, 'description', ''))
           masterVariant: v
           variants: []
@@ -105,7 +105,7 @@ exports.XmlImport.prototype.mapProducts = (xmljs, callback)->
         if id2id[row.uid]
           p.id = id2id[row.uid]
 
-        @mapCategories(row, p)
+        @mapCategories row, p
         products.push p
         images[row.uid] = []
         images[row.uid].push img
@@ -177,7 +177,7 @@ exports.XmlImport.prototype.mapAttributes = (row, j)->
 
   numbers = [ 'hight', 'length', 'wide' ]
   for n in numbers
-    v = @val(row, n, '')
+    v = @val row, n, ''
     continue unless v.length > 0
     d =
       name: n
@@ -193,7 +193,7 @@ exports.XmlImport.prototype.mapAttributes = (row, j)->
   for orig,trans of enums
     trans = orig unless trans.length > 0
     v = 'NO'
-    v = 'YES' if @val(row, orig, '') == '1'
+    v = 'YES' if @val(row, orig, '') is '1'
     d =
       name: trans
       value: v
@@ -206,13 +206,13 @@ exports.XmlImport.prototype.mapPrices = (row, j, customerGroupId)->
 
   p =
     value:
-      centAmount: @getPrice(row, 'priceb2c')
+      centAmount: @getPrice row, 'priceb2c'
       currencyCode: currency
   j.prices.push p
 
   p =
     value:
-      centAmount: @getPrice(row, 'priceb2b')
+      centAmount: @getPrice row, 'priceb2b'
       currencyCode: currency
     customerGroup:
       typeId: 'customer-group'
@@ -222,7 +222,7 @@ exports.XmlImport.prototype.mapPrices = (row, j, customerGroupId)->
   return if @val(row, 'specialpriceflag', '') is '0'
   p =
     value:
-      centAmount: @getPrice(row, 'specialprice')
+      centAmount: @getPrice row, 'specialprice'
       currencyCode: currency,
     country: country
   j.prices.push p
@@ -233,7 +233,7 @@ exports.XmlImport.prototype.getPrice = (row, name)->
 exports.XmlImport.prototype.isVariant = (row)->
   if row.basisUidartnr is undefined
     return false
-  if row.basisUidartnr == row.uid
+  if row.basisUidartnr is row.uid
     return false
   true
 
@@ -245,13 +245,13 @@ exports.XmlImport.prototype.products = ->
   deferred.promise
 
 exports.XmlImport.prototype.productType = ->
-  @getFirst('/product-types')
+  @getFirst '/product-types'
 
 exports.XmlImport.prototype.taxCategory = ->
-  @getFirst('/tax-categories')
+  @getFirst '/tax-categories'
 
 exports.XmlImport.prototype.customerGroup = ->
-  @getFirst('/customer-groups')
+  @getFirst '/customer-groups'
 
 exports.XmlImport.prototype.getFirst = (endpoint) ->
   deferred = Q.defer()
