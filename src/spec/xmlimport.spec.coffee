@@ -11,7 +11,7 @@ describe 'XmlImport', ->
     expect(@xmlImport._options).toBe 'foo'
 
 
-describe 'XmlImport.start', ->
+describe 'XmlImport.process', ->
   beforeEach ->
     @xmlImport = new XmlImport()
 
@@ -21,8 +21,11 @@ describe 'XmlImport.start', ->
   it 'should throw error if no JSON object is passed', ->
     expect(=> @xmlImport.process({})).toThrow new Error('Callback must be a function')
 
-  xit 'should call the given callback', (done) ->
-    @xmlImport.process({}, -> done())
+  it 'should call the given callback and return messge', (done) ->
+    @xmlImport.process {}, (data)->
+      expect(data.message.status).toBe false
+      expect(data.message.error).toBe 'No products given'
+      done()
 
 describe 'XmlImport.helper', ->
   beforeEach ->
@@ -39,14 +42,12 @@ describe 'XmlImport.helper', ->
       basisUidartnr: 'abc'
     expect(@xmlImport.isVariant(row)).toBe true
 
-describe 'XmlImport.map', ->
+describe 'XmlImport.transform', ->
   beforeEach ->
     @xmlImport = new XmlImport()
 
-  it 'single attachment', (done) ->
-    input =
-      attachments:
-        'products': '
+  it 'single attachment - product plus variant', (done) ->
+    rawXml = '
 <row>
   <uid>123</uid>
   <name>Some long name with "chars"</name>
@@ -94,10 +95,11 @@ describe 'XmlImport.map', ->
   <specialprice>0.000</specialprice>
 </row>'
 
-    @xmlImport.process(input, (output) ->
+    @xmlImport.transform @xmlImport.getAndFix(rawXml), (output) ->
       console.log(output)
       expect(output.message).toBeDefined
-      p = output.message
+      expect(output.message.products.length).toBe 1
+      p = output.message.products[0]
       expect(p.name.de).toBe 'Short name'
       expect(p.slug.de).toBe 'short-name'
       expect(p.productType.typeId).toBe 'product-type'
@@ -119,4 +121,3 @@ describe 'XmlImport.map', ->
       expect(v.attributes).toBeDefined
       expect(v.prices.length).toBe 2
       done()
-    )

@@ -2,12 +2,14 @@ _ = require('underscore')._
 {parseString} = require 'xml2js'
 Config = require('../config').config
 Rest = require('sphere-node-connect').Rest
+Sync = require("sphere-product-sync").Sync
 Q = require('q')
 
 # Define XmlImport object
 exports.XmlImport = (options)->
   @_options = options
   @rest = new Rest Config
+  @sync = new Sync Config
   return
 
 exports.XmlImport.prototype.process = (data, callback)->
@@ -16,9 +18,30 @@ exports.XmlImport.prototype.process = (data, callback)->
 
   if data.attachments
     for k,v of data.attachments
-      @transform(@getAndFix(v), callback)
+      @transform @getAndFix(v), (data)=>
+        @createOrUpdate(data, callback)
   else
-    callback({})
+    @returnError 'No products given', callback
+
+exports.XmlImport.prototype.returnError = (msg, callback)->
+  d =
+    message:
+      status: false
+      error: msg
+  console.log "Error occored: %j", d
+  callback d
+
+exports.XmlImport.prototype.createOrUpdate = (data, callback)->
+  for p in data.message.products
+    console.log "PRO %j", p
+    @sync.start p, (diffResult)=>
+      console.log "SYNC %j", diffResult
+      if diffResult.status
+        callback(diffResult)
+      else
+        @rest.POST "/products", JSON.stringify(p), (error, response, body)->
+          console.log("BODY %j", body)
+          callback(body)
 
 exports.XmlImport.prototype.getAndFix = (raw)->
   #TODO: decode base64 - make configurable for testing
@@ -26,17 +49,22 @@ exports.XmlImport.prototype.getAndFix = (raw)->
 
 exports.XmlImport.prototype.transform = (xml, callback)->
   parseString xml, (err, result)=>
-    console.log('Error on parsing XML:' + err) if err
-    @mapProducts(result.root, callback)
+    @returnError 'Error on parsing XML:' + err, callback if err
+    @mapProducts result.root, callback
 
 exports.XmlImport.prototype.mapProducts = (xmljs, callback)->
   products = []
   variants = {} # uid -> [variant]
   images = {} # uid: variantId -> [images]
-  varianId = 0
 
-  allIds = Q.all [@productType(), @taxCategory(), @customerGroup()]
-  allIds.spread (productTypeId, taxCategoryId, customerGroupId)=>
+  allIds = Q.all [@products(), @productType(), @taxCategory(), @customerGroup()]
+  allIds.spread (existingProducts, productTypeId, taxCategoryId, customerGroupId)=>
+    id2id = {}
+    for p in existingProducts
+      for a in p.masterData.current.masterVariant.attributes
+        if a.name is 'uid'
+          id2id[a.value] = p.id
+
     for k,row of xmljs.row
       v =
         id: 0
@@ -68,6 +96,9 @@ exports.XmlImport.prototype.mapProducts = (xmljs, callback)->
           masterVariant: v
           variants: []
 
+        if id2id[row.uid]
+          p.id = id2id[row.uid]
+
         @mapCategories(row, p)
         products.push p
         images[row.uid] = []
@@ -78,9 +109,12 @@ exports.XmlImport.prototype.mapProducts = (xmljs, callback)->
       uid = p.masterVariant.attributes[0].value
       if variants[uid]
         p.variants = variants[uid]
-      data =
-        message: p
-      callback(data)
+
+    d =
+      message:
+        products: products,
+        images: images
+    callback(d)
 
 exports.XmlImport.prototype.mapImages = (row)->
   i = [
@@ -166,13 +200,13 @@ exports.XmlImport.prototype.mapPrices = (row, j, customerGroupId)->
 
   p =
     value:
-      centAmount: parseInt @val(row, 'priceb2c', ''), 10
+      centAmount: @getPrice(row, 'priceb2c')
       currencyCode: currency
   j.prices.push p
 
   p =
     value:
-      centAmount: parseInt @val(row, 'priceb2b', ''), 10
+      centAmount: @getPrice(row, 'priceb2b')
       currencyCode: currency
     customerGroup:
       typeId: 'customer-group'
@@ -182,10 +216,13 @@ exports.XmlImport.prototype.mapPrices = (row, j, customerGroupId)->
   return if @val(row, 'specialpriceflag', '') is '0'
   p =
     value:
-      centAmount: parseInt @val(row, 'specialprice', ''), 10
-      currencyCode: currency
+      centAmount: @getPrice(row, 'specialprice')
+      currencyCode: currency,
     country: country
   j.prices.push p
+
+exports.XmlImport.prototype.getPrice = (row, name)->
+  parseInt(parseFloat(@val(row, name, ''), 10) * 100)
 
 exports.XmlImport.prototype.isVariant = (row)->
   if row.basisUidartnr is undefined
@@ -194,10 +231,16 @@ exports.XmlImport.prototype.isVariant = (row)->
     return false
   true
 
+exports.XmlImport.prototype.products = ->
+  deferred = Q.defer()
+  @rest.GET "/products", (error, response, body)->
+    products = JSON.parse(body).results
+    deferred.resolve products
+  deferred.promise
+
 exports.XmlImport.prototype.productType = ->
   deferred = Q.defer()
   @rest.GET "/product-types", (error, response, body)->
-    #console.log("PT: %j", body)
     id = JSON.parse(body).results[0].id
     deferred.resolve id
   deferred.promise
@@ -205,7 +248,6 @@ exports.XmlImport.prototype.productType = ->
 exports.XmlImport.prototype.taxCategory = ->
   deferred = Q.defer()
   @rest.GET "/tax-categories", (error, response, body)->
-    #console.log("TC: %j", body)
     id = JSON.parse(body).results[0].id
     deferred.resolve id
   deferred.promise
@@ -214,6 +256,5 @@ exports.XmlImport.prototype.customerGroup = ->
   deferred = Q.defer()
   @rest.GET "/customer-groups", (error, response, body)->
     id = JSON.parse(body).results[0].id
-    #console.log("CG: %j", body)
     deferred.resolve id
   deferred.promise
