@@ -25,10 +25,9 @@ exports.XmlImport.prototype.getAndFix = (raw)->
   "<?xml?><root>#{raw}</root>"
 
 exports.XmlImport.prototype.transform = (xml, callback)->
-  that = this
-  parseString xml, (err, result)->
+  parseString xml, (err, result)=>
     console.log('Error on parsing XML:' + err) if err
-    that.mapProducts(result.root, callback)
+    @mapProducts(result.root, callback)
 
 exports.XmlImport.prototype.mapProducts = (xmljs, callback)->
   products = []
@@ -36,59 +35,52 @@ exports.XmlImport.prototype.mapProducts = (xmljs, callback)->
   images = {} # uid: variantId -> [images]
   varianId = 0
 
-  productTypeId = 'TODO'
-  taxCategoryId = 'TODO'
-  customerGroupId = 'TODO'
-
   allIds = Q.all [@productType(), @taxCategory(), @customerGroup()]
-  allIds.spread (pId, taxCategoryId, customerGroupId)->
-    console.log productTypeId
-    console.log taxCategoryId
-    console.log customerGroupId
+  allIds.spread (productTypeId, taxCategoryId, customerGroupId)=>
+    for k,row of xmljs.row
+      v =
+        id: 0
+      @mapCategories(row, v)
+      @mapAttributes(row, v)
+      @mapPrices(row, v, customerGroupId)
+      img = @mapImages(row)
 
-  for k,row of xmljs.row
-    v =
-      id: 0
-    @mapCategories(row, v)
-    @mapAttributes(row, v)
-    @mapPrices(row, v, customerGroupId)
-    img = @mapImages(row)
+      if @isVariant(row)
+        parentId = row.basisUidartnr
+        variants[parentId] = [] if not variants[parentId]
+        v.id = variants[parentId].length + 2
+        variants[parentId].push v
+        images[parentId].push img
 
-    if @isVariant(row)
-      parentId = row.basisUidartnr
-      variants[parentId] = [] if not variants[parentId]
-      v.id = variants[parentId].length + 2
-      variants[parentId].push v
-      images[parentId].push img
+      else
+        v.id = 1
+        n = @val(row, 'descriptionVariant', @val(row, 'name'))
+        p =
+          productType:
+            typeId: 'product-type'
+            id: productTypeId
+          taxCategory:
+            typeId: 'tax-category'
+            id: taxCategoryId
+          name: @lang(n)
+          slug: @lang(@slugify(n))
+          description: @lang(@val(row, 'description', ''))
+          masterVariant: v
+          variants: []
 
-    else
-      v.id = 1
-      n = @val(row, 'descriptionVariant', @val(row, 'name'))
-      p =
-        productType:
-          typeId: 'product-type'
-          id: productTypeId
-        taxCategory:
-          typeId: 'tax-category'
-          id: taxCategoryId
-        name: @lang(n)
-        slug: @lang(@slugify(n))
-        description: @lang(@val(row, 'description', ''))
-        masterVariant: v
-        variants: []
-      @mapCategories(row, p)
-      products.push p
-      images[row.uid] = []
-      images[row.uid].push img
+        @mapCategories(row, p)
+        products.push p
+        images[row.uid] = []
+        images[row.uid].push img
 
-  for p in products
-    # first attribute holds uid attribute
-    uid = p.masterVariant.attributes[0].value
-    if variants[uid]
-      p.variants = variants[uid]
-    data =
-      message: p
-    callback(data)
+    for p in products
+      # first attribute holds uid attribute
+      uid = p.masterVariant.attributes[0].value
+      if variants[uid]
+        p.variants = variants[uid]
+      data =
+        message: p
+      callback(data)
 
 exports.XmlImport.prototype.mapImages = (row)->
   i = [

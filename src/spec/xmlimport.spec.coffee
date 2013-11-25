@@ -101,9 +101,9 @@ describe 'XmlImport.map', ->
       expect(p.name.de).toBe 'Short name'
       expect(p.slug.de).toBe 'short-name'
       expect(p.productType.typeId).toBe 'product-type'
-      expect(p.productType.id).toBe 'TODO'
+      expect(p.productType.id.length).toBe 36
       expect(p.taxCategory.typeId).toBe 'tax-category'
-      expect(p.taxCategory.id).toBe 'TODO'
+      expect(p.taxCategory.id.length).toBe 36
 
       expect(p.categories.length).toBe 0
 

@@ -12,15 +12,13 @@ describe "Integration", ->
     @sync = new Sync Config
 
   it "round trip", (done)->
-    xmlImport = @xmlImport
-    sync = @sync
-    fs.readFile 'src/spec/oneProduct.xml', 'utf8', (err,data)->
+    fs.readFile 'src/spec/oneProduct.xml', 'utf8', (err,data)=>
       expect(err).toBeUndefined
-      xmlImport.transform xmlImport.getAndFix(data), (data)->
+      @xmlImport.transform @xmlImport.getAndFix(data), (data)=>
         expect(data.message).toBeDefined
         expect(data.message.name.de).toBe "Short name"
         data.message.id = "123"
-        sync.start data.message, (cb)->
+        @sync.start data.message, (cb)=>
           console.log("SYNC %j", cb)
           if cb.status == false
             rest = new Rest Config
