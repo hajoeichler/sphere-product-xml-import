@@ -64,6 +64,7 @@ exports.XmlImport.prototype.mapProducts = (xmljs, callback)->
       for a in p.masterData.current.masterVariant.attributes
         if a.name is 'uid'
           id2id[a.value] = p.id
+    console.log "Number of existing products: " + _.size(id2id)
 
     for k,row of xmljs.row
       v =
@@ -239,22 +240,23 @@ exports.XmlImport.prototype.products = ->
   deferred.promise
 
 exports.XmlImport.prototype.productType = ->
-  deferred = Q.defer()
-  @rest.GET "/product-types", (error, response, body)->
-    id = JSON.parse(body).results[0].id
-    deferred.resolve id
-  deferred.promise
+  @getFirst('/product-types')
 
 exports.XmlImport.prototype.taxCategory = ->
-  deferred = Q.defer()
-  @rest.GET "/tax-categories", (error, response, body)->
-    id = JSON.parse(body).results[0].id
-    deferred.resolve id
-  deferred.promise
+  @getFirst('/tax-categories')
 
 exports.XmlImport.prototype.customerGroup = ->
+  @getFirst('/customer-groups')
+
+exports.XmlImport.prototype.getFirst = (endpoint) ->
   deferred = Q.defer()
-  @rest.GET "/customer-groups", (error, response, body)->
-    id = JSON.parse(body).results[0].id
-    deferred.resolve id
+  @rest.GET endpoint, (error, response, body)->
+    if response.statusCode is 200
+      res = JSON.parse(body).results
+      if res.length > 0
+        deferred.resolve res[0].id
+      else
+      deferred.resolve new Error "There are no entries at #{endpoint}"
+    else
+      deferred.resolve new Error "Problem on getting #{endpoint}"
   deferred.promise
