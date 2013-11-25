@@ -2,7 +2,6 @@ _ = require('underscore')._
 {parseString} = require 'xml2js'
 Config = require('../config').config
 Rest = require('sphere-node-connect').Rest
-OAuth2 = require('sphere-node-connect').OAuth2
 Q = require('q')
 
 # Define XmlImport object
@@ -26,9 +25,10 @@ exports.XmlImport.prototype.getAndFix = (raw)->
   "<?xml?><root>#{raw}</root>"
 
 exports.XmlImport.prototype.transform = (xml, callback)->
+  that = this
   parseString xml, (err, result)->
     console.log('Error on parsing XML:' + err) if err
-    exports.XmlImport.prototype.mapProducts(result.root, callback)
+    that.mapProducts(result.root, callback)
 
 exports.XmlImport.prototype.mapProducts = (xmljs, callback)->
   products = []
@@ -40,8 +40,11 @@ exports.XmlImport.prototype.mapProducts = (xmljs, callback)->
   taxCategoryId = 'TODO'
   customerGroupId = 'TODO'
 
-  @productType().then(@taxCategory()).then(@customerGroup()).then (pId)->
-    console.log pId
+  allIds = Q.all [@productType(), @taxCategory(), @customerGroup()]
+  allIds.spread (pId, taxCategoryId, customerGroupId)->
+    console.log productTypeId
+    console.log taxCategoryId
+    console.log customerGroupId
 
   for k,row of xmljs.row
     v =
@@ -200,27 +203,24 @@ exports.XmlImport.prototype.isVariant = (row)->
   true
 
 exports.XmlImport.prototype.productType =->
-  rest = new Rest Config
   deferred = Q.defer()
-  rest.GET "/product-types", (error, response, body)->
+  @rest.GET "/product-types", (error, response, body)->
     #console.log("PT: %j", body)
     id = JSON.parse(body).results[0].id
     deferred.resolve id
   deferred.promise
 
 exports.XmlImport.prototype.taxCategory =->
-  rest = new Rest Config
   deferred = Q.defer()
-  rest.GET "/tax-categories", (error, response, body)->
+  @rest.GET "/tax-categories", (error, response, body)->
     #console.log("TC: %j", body)
     id = JSON.parse(body).results[0].id
     deferred.resolve id
   deferred.promise
 
 exports.XmlImport.prototype.customerGroup =->
-  rest = new Rest Config
   deferred = Q.defer()
-  rest.GET "/customer-groups", (error, response, body)->
+  @rest.GET "/customer-groups", (error, response, body)->
     id = JSON.parse(body).results[0].id
     #console.log("CG: %j", body)
     deferred.resolve id
