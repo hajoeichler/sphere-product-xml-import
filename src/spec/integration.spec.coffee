@@ -5,7 +5,7 @@ Sync = require("sphere-product-sync").Sync
 Rest = require("sphere-node-connect").Rest
 
 describe "Integration", ->
-  beforeEach ->
+  beforeEach (done) ->
     @xmlImport = new XmlImport()
     @sync = new Sync Config
     rest = new Rest Config
@@ -14,6 +14,7 @@ describe "Integration", ->
       for p in JSON.parse(body).results
         rest.DELETE "/products/#{p.id}?version=#{p.version}", (error, response, body) =>
           expect(response.statusCode.toString()).toMatch /[24]00/
+          done()
 
   it 'process', (done)->
     fs.readFile 'src/spec/oneProduct.xml', 'utf8', (err, content) =>
@@ -21,6 +22,8 @@ describe "Integration", ->
       data =
         attachments:
           oneProduct: content
-      @xmlImport.process data, (cb) ->
-        console.log("PROCESS %j", cb)
-        done()
+      @xmlImport.process data, (msg) =>
+        expect(msg.message.status).toBe true
+        @xmlImport.process data, (msg) =>
+          expect(msg.status).toBe true
+          done()
