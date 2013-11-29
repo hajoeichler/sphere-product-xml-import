@@ -35,33 +35,35 @@ exports.XmlImport.prototype.returnError = (msg, callback)->
 exports.XmlImport.prototype.createOrUpdate = (data, callback)->
   for p in data.message.products
     console.log "PRO %j", p
-    @rest.GET "/product-projections/#{p.id}", (error, response, body)=>
-      if response.statusCode is 404
-        console.log "CREATE %j", p.id
-        # create new product
-        @rest.POST "/products", JSON.stringify(p), (error, response, body)=>
-          if response.statusCode is 201
-            callback
-              message:
-                status: true
-          else
-            callback
-              message:
-                status: false
-                error: body
-      else
-        # update product
-        @sync.buildActions(p, old_prod).update (error, response, body)->
-          if response.statusCode is 200
-            console.log "SYNC %j", p.id
-            callback
-              message:
-                status: true
-          else
-            callback
-              message:
-                status: false
-                error: body
+    unless p.id
+      console.log "CREATE %j", p
+      # create new product
+      @rest.POST "/products", JSON.stringify(p), (error, response, body)=>
+        if response.statusCode is 201
+          console.log "Product created"
+          callback
+            message:
+              status: true
+        else
+          console.log "Could not create product"
+          console.log body
+          callback
+            message:
+              status: false
+              error: body
+    else
+      # update product
+      @sync.buildActions(p, old_prod).update (error, response, body)->
+        if response.statusCode is 200
+          console.log "SYNC %j", p.id
+          callback
+            message:
+              status: true
+        else
+          callback
+            message:
+              status: false
+              error: body
 
 exports.XmlImport.prototype.getAndFix = (raw)->
   #TODO: decode base64 - make configurable for testing
