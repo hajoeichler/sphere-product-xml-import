@@ -6,10 +6,11 @@ Sync = require('sphere-product-sync').Sync
 Q = require('q')
 
 # Define XmlImport object
-exports.XmlImport = (options)->
+exports.XmlImport = (options = {})->
+  # TODO: check for valid credentials
   @_options = options
-  @rest = new Rest Config
-  @sync = new Sync Config
+  @rest = new Rest config: Config
+  @sync = new Sync config: Config
   return
 
 exports.XmlImport.prototype.process = (data, callback)->
@@ -34,19 +35,33 @@ exports.XmlImport.prototype.returnError = (msg, callback)->
 exports.XmlImport.prototype.createOrUpdate = (data, callback)->
   for p in data.message.products
     console.log "PRO %j", p
-    @sync.start p, (diffResult)=>
-      console.log "SYNC %j", diffResult
-      if diffResult.status
-        callback diffResult
-      else
-        @rest.POST "/products", JSON.stringify(p), (error, response, body)->
+    @rest.GET "/product-projections/#{p.id}", (error, response, body)=>
+      if response.statusCode is 404
+        console.log "CREATE %j", p.id
+        # create new product
+        @rest.POST "/products", JSON.stringify(p), (error, response, body)=>
           if response.statusCode is 201
-            d =
+            callback
               message:
                 status: true
-            callback d
           else
-            returnError 'Problem on creating product.', callback
+            callback
+              message:
+                status: false
+                error: body
+      else
+        # update product
+        @sync.buildActions(p, old_prod).update (error, response, body)->
+          if response.statusCode is 200
+            console.log "SYNC %j", p.id
+            callback
+              message:
+                status: true
+          else
+            callback
+              message:
+                status: false
+                error: body
 
 exports.XmlImport.prototype.getAndFix = (raw)->
   #TODO: decode base64 - make configurable for testing
