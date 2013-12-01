@@ -9,7 +9,7 @@ Q = require('q')
 exports.XmlImport = (options) ->
   @_options = options
   @sync = new Sync Config
-  @rest = new Rest Config
+  @rest = @sync._rest
   return
 
 exports.XmlImport.prototype.process = (data, callback) ->
