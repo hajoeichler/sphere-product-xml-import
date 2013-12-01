@@ -28,8 +28,12 @@ describe '#process', ->
         expect(result.message.msg).toBe 'New product created'
         @xmlImport.process data, (result) =>
           expect(result.message.status).toBe true
-          expect(result.message.msg).toBe 'Nothing to update'
-          done()
+          expect(result.message.msg).toBe 'Nothing updated'
+          @rest.GET '/products', (error, response, body) =>
+            expect(response.statusCode).toBe 200
+            products = JSON.parse(body).results
+            expect(products[0].version).toBe 1
+            done()
 
   it 'create new product, change name and update afterwards', (done) ->
     fs.readFile 'src/spec/oneProduct.xml', 'utf8', (err, content) =>
@@ -46,4 +50,8 @@ describe '#process', ->
         @xmlImport.process d2, (result) =>
           expect(result.message.status).toBe true
           expect(result.message.msg).toBe 'Product updated'
-          done()
+          @rest.GET '/products', (error, response, body) =>
+            expect(response.statusCode).toBe 200
+            products = JSON.parse(body).results
+            expect(products[0].version).toBe 3
+            done()

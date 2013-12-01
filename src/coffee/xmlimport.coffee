@@ -40,16 +40,21 @@ exports.XmlImport.prototype.createOrUpdate = (data, callback) ->
         json = JSON.parse(body)
         console.log 'Result total: %j', json.total
         if json.total is 1
-          diff = @sync.buildActions p, json.results[0].masterData.current
+          p.id = json.results[0].id
+          p.version = json.results[0].version
+          p2 = json.results[0].masterData.staged
+          p2.id = json.results[0].id
+          p2.version = json.results[0].version
+          diff = @sync.buildActions p, p2
           console.log 'SYNC result: %j', diff
-          if _.isObject diff._data.update
-            diff.update (error, response, body) =>
+          diff.update (error, response, body) =>
             if response.statusCode is 200
-              @returnResult true, 'Product updated', callback
+              if body is null
+                @returnResult true, 'Nothing updated', callback
+              else
+                @returnResult true, 'Product updated', callback
             else
               @returnResult false, 'Problem on updating existing product.' + body, callback
-          else
-            @returnResult true, 'Nothing to update', callback
         else
           console.log "Tyring to create new product: %j", p
           @rest.POST '/products', JSON.stringify(p), (error, response, body) =>
