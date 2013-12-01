@@ -97,7 +97,6 @@ describe 'XmlImport.transform', ->
 </row>'
 
     @xmlImport.transform @xmlImport.getAndFix(rawXml), (output) ->
-      console.log(output)
       expect(output.products.length).toBe 1
       p = output.products[0]
       expect(p.name.de).toBe 'Short name'

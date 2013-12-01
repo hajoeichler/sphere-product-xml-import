@@ -33,12 +33,10 @@ exports.XmlImport.prototype.returnResult = (positiveFeedback, msg, callback) ->
 
 exports.XmlImport.prototype.createOrUpdate = (data, callback) ->
   for p in data.products
-    console.log 'Looking for existing masterVariant sku %j', p.masterVariant.sku
     query = encodeURIComponent "masterData(current(masterVariant(sku=\"#{p.masterVariant.sku}\")))"
     @rest.GET "/products?where=#{query}", (error, response, body) =>
       if response.statusCode is 200
         json = JSON.parse(body)
-        console.log 'Result total: %j', json.total
         if json.total is 1
           p.id = json.results[0].id
           p.version = json.results[0].version
@@ -46,7 +44,6 @@ exports.XmlImport.prototype.createOrUpdate = (data, callback) ->
           p2.id = json.results[0].id
           p2.version = json.results[0].version
           diff = @sync.buildActions p, p2
-          console.log 'SYNC result: %j', diff
           diff.update (error, response, body) =>
             if response.statusCode is 200
               if body is null
@@ -56,7 +53,6 @@ exports.XmlImport.prototype.createOrUpdate = (data, callback) ->
             else
               @returnResult false, 'Problem on updating existing product.' + body, callback
         else
-          console.log "Tyring to create new product: %j", p
           @rest.POST '/products', JSON.stringify(p), (error, response, body) =>
             if response.statusCode is 201
               @returnResult true, 'New product created', callback
