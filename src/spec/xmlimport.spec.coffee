@@ -1,3 +1,4 @@
+Config = require '../config'
 XmlImport = require('../lib/xmlimport').XmlImport
 
 describe 'XmlImport', ->
@@ -24,7 +25,7 @@ describe 'XmlImport.process', ->
   it 'should call the given callback and return messge', (done) ->
     @xmlImport.process {}, (data)->
       expect(data.message.status).toBe false
-      expect(data.message.error).toBe 'No products given'
+      expect(data.message.msg).toBe 'No products given'
       done()
 
 describe 'XmlImport.helper', ->
@@ -44,7 +45,7 @@ describe 'XmlImport.helper', ->
 
 describe 'XmlImport.transform', ->
   beforeEach ->
-    @xmlImport = new XmlImport()
+    @xmlImport = new XmlImport Config
 
   it 'single attachment - product plus variant', (done) ->
     rawXml = '
@@ -97,9 +98,8 @@ describe 'XmlImport.transform', ->
 
     @xmlImport.transform @xmlImport.getAndFix(rawXml), (output) ->
       console.log(output)
-      expect(output.message).toBeDefined
-      expect(output.message.products.length).toBe 1
-      p = output.message.products[0]
+      expect(output.products.length).toBe 1
+      p = output.products[0]
       expect(p.name.de).toBe 'Short name'
       expect(p.slug.de).toBe 'short-name'
       expect(p.productType.typeId).toBe 'product-type'

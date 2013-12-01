@@ -1,80 +1,75 @@
 _ = require('underscore')._
 {parseString} = require 'xml2js'
-Config = require('../config').config
+Config = require '../config'
 Rest = require('sphere-node-connect').Rest
 Sync = require('sphere-product-sync').Sync
 Q = require('q')
 
 # Define XmlImport object
-exports.XmlImport = (options = {})->
-  # TODO: check for valid credentials
+exports.XmlImport = (options) ->
   @_options = options
-  @rest = new Rest config: Config
-  @sync = new Sync config: Config
+  @sync = new Sync Config
+  @rest = new Rest Config
   return
 
-exports.XmlImport.prototype.process = (data, callback)->
+exports.XmlImport.prototype.process = (data, callback) ->
   throw new Error 'JSON Object required' unless _.isObject data
   throw new Error 'Callback must be a function' unless _.isFunction callback
 
   if data.attachments
     for k,v of data.attachments
-      @transform @getAndFix(v), (data)=>
+      @transform @getAndFix(v), (data) =>
         @createOrUpdate data, callback
   else
-    @returnError 'No products given', callback
+    @returnResult false, 'No products given', callback
 
-exports.XmlImport.prototype.returnError = (msg, callback)->
+exports.XmlImport.prototype.returnResult = (positiveFeedback, msg, callback) ->
   d =
     message:
-      status: false
-      error: msg
-  console.log "Error occored: %j", d
+      status: positiveFeedback
+      msg: msg
+  console.log 'Error occurred: %j', d if not positiveFeedback
   callback d
 
-exports.XmlImport.prototype.createOrUpdate = (data, callback)->
-  for p in data.message.products
-    console.log "PRO %j", p
-    unless p.id
-      console.log "CREATE %j", p
-      # create new product
-      @rest.POST "/products", JSON.stringify(p), (error, response, body)=>
-        if response.statusCode is 201
-          console.log "Product created"
-          callback
-            message:
-              status: true
+exports.XmlImport.prototype.createOrUpdate = (data, callback) ->
+  for p in data.products
+    console.log 'Looking for existing masterVariant sku %j', p.masterVariant.sku
+    query = encodeURIComponent "masterData(current(masterVariant(sku=\"#{p.masterVariant.sku}\")))"
+    @rest.GET "/products?where=#{query}", (error, response, body) =>
+      if response.statusCode is 200
+        json = JSON.parse(body)
+        console.log 'Result total: %j', json.total
+        if json.total is 1
+          diff = @sync.buildActions p, json.results[0].masterData.current
+          console.log 'SYNC result: %j', diff
+          if _.isObject diff._data.update
+            diff.update (error, response, body) =>
+            if response.statusCode is 200
+              @returnResult true, 'Product updated', callback
+            else
+              @returnResult false, 'Problem on updating existing product.' + body, callback
+          else
+            @returnResult true, 'Nothing to update', callback
         else
-          console.log "Could not create product"
-          console.log body
-          callback
-            message:
-              status: false
-              error: body
-    else
-      # update product
-      @sync.buildActions(p, old_prod).update (error, response, body)->
-        if response.statusCode is 200
-          console.log "SYNC %j", p.id
-          callback
-            message:
-              status: true
-        else
-          callback
-            message:
-              status: false
-              error: body
+          console.log "Tyring to create new product: %j", p
+          @rest.POST '/products', JSON.stringify(p), (error, response, body) =>
+            if response.statusCode is 201
+              @returnResult true, 'New product created', callback
+            else
+              @returnResult false, 'Problem on creating new product.' + body, callback
+      else
+        @returnResult false, 'Problem on fetching existing product via sku', callback
 
-exports.XmlImport.prototype.getAndFix = (raw)->
+exports.XmlImport.prototype.getAndFix = (raw) ->
   #TODO: decode base64 - make configurable for testing
   "<?xml?><root>#{raw}</root>"
 
-exports.XmlImport.prototype.transform = (xml, callback)->
-  parseString xml, (err, result)=>
-    @returnError 'Error on parsing XML:' + err, callback if err
+exports.XmlImport.prototype.transform = (xml, callback) ->
+  parseString xml, (err, result) =>
+    @returnResult false, 'Error on parsing XML:' + err, callback if err
     @mapProducts result.root, callback
 
-exports.XmlImport.prototype.mapProducts = (xmljs, callback)->
+exports.XmlImport.prototype.mapProducts = (xmljs, callback) ->
   products = []
   variants = {} # uid -> [variant]
   images = {} # uid: variantId -> [images]
@@ -86,11 +81,12 @@ exports.XmlImport.prototype.mapProducts = (xmljs, callback)->
       for a in p.masterData.current.masterVariant.attributes
         if a.name is 'uid'
           id2id[a.value] = p.id
-    console.log "Number of existing products: " + _.size(id2id)
+    console.log 'Number of existing products: ' + _.size(id2id)
 
     for k,row of xmljs.row
       v =
         id: 0
+        sku: @val(row, 'uid')
       @mapCategories row, v
       @mapAttributes row, v
       @mapPrices row, v, customerGroupId
@@ -134,34 +130,33 @@ exports.XmlImport.prototype.mapProducts = (xmljs, callback)->
         p.variants = variants[uid]
 
     d =
-      message:
-        products: products,
-        images: images
+      products: products,
+      images: images
     callback(d)
 
-exports.XmlImport.prototype.mapImages = (row)->
+exports.XmlImport.prototype.mapImages = (row) ->
   i = [
     url: "http://s7g1.scene7.com/is/image/DemoCommercetools/#{row.uid}",
   ]
 
-exports.XmlImport.prototype.val = (row, name, fallback)->
+exports.XmlImport.prototype.val = (row, name, fallback) ->
   return row[name][0] if row[name]
   fallback
 
-exports.XmlImport.prototype.lang = (v)->
+exports.XmlImport.prototype.lang = (v) ->
   l =
     de: v
 
-exports.XmlImport.prototype.slugify = (str)->
+exports.XmlImport.prototype.slugify = (str) ->
   # trim and force lowercase
   str = str.replace(/^\s+|\s+$/g, '').toLowerCase()
   # remove invalid chars, collapse whitespace and replace by -, collapse dashes
   str.replace(/[^a-z0-9 -]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-')
 
-exports.XmlImport.prototype.mapCategories = (row, j)->
+exports.XmlImport.prototype.mapCategories = (row, j) ->
   j.categories = []
 
-exports.XmlImport.prototype.mapAttributes = (row, j)->
+exports.XmlImport.prototype.mapAttributes = (row, j) ->
   j.attributes = []
   attribs =
     uid: ''
@@ -216,7 +211,7 @@ exports.XmlImport.prototype.mapAttributes = (row, j)->
       value: v
     j.attributes.push d
 
-exports.XmlImport.prototype.mapPrices = (row, j, customerGroupId)->
+exports.XmlImport.prototype.mapPrices = (row, j, customerGroupId) ->
   j.prices = []
   currency = 'EUR'
   country = 'DE'
@@ -244,10 +239,10 @@ exports.XmlImport.prototype.mapPrices = (row, j, customerGroupId)->
     country: country
   j.prices.push p
 
-exports.XmlImport.prototype.getPrice = (row, name)->
+exports.XmlImport.prototype.getPrice = (row, name) ->
   parseInt(parseFloat(@val(row, name, ''), 10) * 100)
 
-exports.XmlImport.prototype.isVariant = (row)->
+exports.XmlImport.prototype.isVariant = (row) ->
   if row.basisUidartnr is undefined
     return false
   if row.basisUidartnr is row.uid
@@ -256,7 +251,7 @@ exports.XmlImport.prototype.isVariant = (row)->
 
 exports.XmlImport.prototype.products = ->
   deferred = Q.defer()
-  @rest.GET "/products", (error, response, body)->
+  @rest.GET '/products', (error, response, body) ->
     if response.statusCode is 200
       products = JSON.parse(body).results
       deferred.resolve products
@@ -275,7 +270,7 @@ exports.XmlImport.prototype.customerGroup = ->
 
 exports.XmlImport.prototype.getFirst = (endpoint) ->
   deferred = Q.defer()
-  @rest.GET endpoint, (error, response, body)->
+  @rest.GET endpoint, (error, response, body) ->
     if response.statusCode is 200
       res = JSON.parse(body).results
       if res.length > 0
