@@ -3,6 +3,9 @@ XmlImport = require("../lib/xmlimport").XmlImport
 Config = require '../config'
 Rest = require('sphere-node-connect').Rest
 
+# Increase timeout
+jasmine.getEnv().defaultTimeoutInterval = 20000
+
 describe '#process', ->
   beforeEach (done) ->
     @xmlImport = new XmlImport Config
