@@ -75,15 +75,8 @@ exports.XmlImport.prototype.mapProducts = (xmljs, callback) ->
   variants = {} # uid -> [variant]
   images = {} # uid: variantId -> [images]
 
-  allIds = Q.all [@products(), @productType(), @taxCategory(), @customerGroup()]
-  allIds.spread (existingProducts, productTypeId, taxCategoryId, customerGroupId)=>
-    id2id = {}
-    for p in existingProducts
-      for a in p.masterData.current.masterVariant.attributes
-        if a.name is 'uid'
-          id2id[a.value] = p.id
-    console.log 'Number of existing products: ' + _.size(id2id)
-
+  allIds = Q.all [@productType(), @taxCategory(), @customerGroup()]
+  allIds.spread (productTypeId, taxCategoryId, customerGroupId) =>
     for k,row of xmljs.row
       v =
         id: 0
@@ -115,9 +108,6 @@ exports.XmlImport.prototype.mapProducts = (xmljs, callback) ->
           description: @lang(@val(row, 'description', ''))
           masterVariant: v
           variants: []
-
-        if id2id[row.uid]
-          p.id = id2id[row.uid]
 
         @mapCategories row, p
         products.push p
@@ -249,16 +239,6 @@ exports.XmlImport.prototype.isVariant = (row) ->
   if row.basisUidartnr is row.uid
     return false
   true
-
-exports.XmlImport.prototype.products = ->
-  deferred = Q.defer()
-  @rest.GET '/products', (error, response, body) ->
-    if response.statusCode is 200
-      products = JSON.parse(body).results
-      deferred.resolve products
-    else
-      deferred.reject new Error 'Problem on fetching products'
-  deferred.promise
 
 exports.XmlImport.prototype.productType = ->
   @getFirst '/product-types'

@@ -1,7 +1,7 @@
 <row>
   <uid>123</uid>
   <name>Some long name with "chars"</name>
-  <descriptionVariant>Short name</descriptionVariant>
+  <descriptionVariant>Short Name</descriptionVariant>
   <codeMaterial>42</codeMaterial>
   <descriptionMaterial>Nice material</descriptionMaterial>
   <codecolorname>7</codecolorname>

@@ -35,6 +35,8 @@ describe '#process', ->
           @rest.GET '/products', (error, response, body) =>
             expect(response.statusCode).toBe 200
             products = JSON.parse(body).results
+            expect(products[0].masterData.staged.name.de).toBe 'Short Name'
+            expect(products[0].masterData.staged.slug.de).toBe 'short-name'
             expect(products[0].version).toBe 1
             done()
 
@@ -57,4 +59,6 @@ describe '#process', ->
             expect(response.statusCode).toBe 200
             products = JSON.parse(body).results
             expect(products[0].version).toBe 3
+            expect(products[0].masterData.staged.name.de).toBe 'Replaced Name'
+            expect(products[0].masterData.staged.slug.de).toBe 'replaced-name'
             done()
