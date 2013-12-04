@@ -7,7 +7,7 @@ rm -rf lib
 npm version minor
 git checkout production
 git merge master
-grunt
+grunt build
 git add -f lib/xmlimport.js
 git commit -m "Add generated code for production environment."
 git push origin production
