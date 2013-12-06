@@ -25,7 +25,7 @@
     },
     "actions": {
         "services": {
-            "main": "./lib/xmlimport.js",
+            "main": "elasticio.js",
             "title": "Product XML Import"
         }
     }
