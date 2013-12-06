@@ -2,7 +2,7 @@ _ = require('underscore')._
 {parseString} = require 'xml2js'
 Config = require '../config'
 Rest = require('sphere-node-connect').Rest
-Sync = require('sphere-product-sync').Sync
+Sync = require('sphere-node-sync').ProductSync
 Q = require('q')
 
 # Define XmlImport object
@@ -45,13 +45,15 @@ exports.XmlImport.prototype.createOrUpdate = (data, callback) ->
           p2.version = json.results[0].version
           diff = @sync.buildActions p, p2
           diff.update (error, response, body) =>
-            if response.statusCode is 200
-              if body is null
+            if error
+              @returnResult false, 'Error on updating existing product.' + error, callback
+            else
+              if response.statusCode is 200
+                @returnResult true, 'Product updated', callback
+              else if response.statusCode is 304
                 @returnResult true, 'Nothing updated', callback
               else
-                @returnResult true, 'Product updated', callback
-            else
-              @returnResult false, 'Problem on updating existing product.' + body, callback
+                @returnResult false, 'Problem on updating existing product.' + body, callback
         else
           @rest.POST '/products', JSON.stringify(p), (error, response, body) =>
             if response.statusCode is 201
