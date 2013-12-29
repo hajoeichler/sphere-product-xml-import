@@ -2,12 +2,32 @@ fs = require('fs')
 XmlImport = require("../lib/xmlimport").XmlImport
 Config = require '../config'
 Rest = require('sphere-node-connect').Rest
+Q = require('q')
 
 # Increase timeout
 jasmine.getEnv().defaultTimeoutInterval = 20000
 
 describe '#process', ->
   beforeEach (done) ->
+    deleteProduct = (rest, p) ->
+      deffered = Q.defer()
+      unpublish =
+        id: p.id
+        version: p.version
+        actions: [
+          action: 'unpublish'
+        ]
+      rest.POST "/products/#{p.id}", JSON.stringify(unpublish), (error, response, body)=>
+        v = p.version
+        if response.statusCode == 200
+          v = v + 1
+        rest.DELETE "/products/#{p.id}?version=#{v}", (error, response, body) =>
+          if response.statusCode == 200
+            deffered.resolve body
+          else
+            deffered.reject body
+      deffered.promise
+
     @xmlImport = new XmlImport Config
     @rest = @xmlImport.rest
     @rest.GET '/products', (error, response, body) =>
@@ -15,10 +35,15 @@ describe '#process', ->
       products = JSON.parse(body).results
       if products.length is 0
         done()
+      deletions = []
       for p in products
-        @rest.DELETE "/products/#{p.id}?version=#{p.version}", (error, response, body) =>
-          expect(response.statusCode.toString()).toMatch /[24]00/
-          done()
+        deletions.push deleteProduct(@rest, p)
+      Q.all(deletions).then () =>
+        done()
+      .fail (msg) =>
+        console.log msg
+        expect(true).toBe false
+        done()
 
   it 'create new product and update afterwards without differences', (done) ->
     fs.readFile 'src/spec/oneProduct.xml', 'utf8', (err, content) =>
