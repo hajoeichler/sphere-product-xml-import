@@ -17,11 +17,11 @@ describe '#process', ->
         actions: [
           action: 'unpublish'
         ]
-      rest.POST "/products/#{p.id}", JSON.stringify(unpublish), (error, response, body)=>
+      rest.POST "/products/#{p.id}", JSON.stringify(unpublish), (error, response, body) ->
         v = p.version
         if response.statusCode == 200
           v = v + 1
-        rest.DELETE "/products/#{p.id}?version=#{v}", (error, response, body) =>
+        rest.DELETE "/products/#{p.id}?version=#{v}", (error, response, body) ->
           if response.statusCode == 200
             deffered.resolve body
           else
@@ -38,9 +38,9 @@ describe '#process', ->
       deletions = []
       for p in products
         deletions.push deleteProduct(@rest, p)
-      Q.all(deletions).then () =>
+      Q.all(deletions).then () ->
         done()
-      .fail (msg) =>
+      .fail (msg) ->
         console.log msg
         expect(true).toBe false
         done()
@@ -57,7 +57,7 @@ describe '#process', ->
         @xmlImport.process data, (result) =>
           expect(result.message.status).toBe true
           expect(result.message.msg).toBe 'Nothing updated'
-          @rest.GET '/products', (error, response, body) =>
+          @rest.GET '/products', (error, response, body) ->
             expect(response.statusCode).toBe 200
             products = JSON.parse(body).results
             expect(products[0].masterData.staged.name.de).toBe 'Short Name'
@@ -80,7 +80,7 @@ describe '#process', ->
         @xmlImport.process d2, (result) =>
           expect(result.message.status).toBe true
           expect(result.message.msg).toBe 'Product updated'
-          @rest.GET '/products', (error, response, body) =>
+          @rest.GET '/products', (error, response, body) ->
             expect(response.statusCode).toBe 200
             products = JSON.parse(body).results
             expect(products[0].version).toBe 3
