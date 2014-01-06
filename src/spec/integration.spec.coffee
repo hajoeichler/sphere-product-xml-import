@@ -1,8 +1,9 @@
-fs = require('fs')
-XmlImport = require("../lib/xmlimport").XmlImport
+fs = require 'fs'
+xmlHelpers = require '../lib/xmlhelpers'
+XmlImport = require '../lib/xmlimport'
 Config = require '../config'
 Rest = require('sphere-node-connect').Rest
-Q = require('q')
+Q = require 'q'
 
 # Increase timeout
 jasmine.getEnv().defaultTimeoutInterval = 20000
@@ -19,10 +20,10 @@ describe '#process', ->
         ]
       rest.POST "/products/#{p.id}", JSON.stringify(unpublish), (error, response, body) ->
         v = p.version
-        if response.statusCode == 200
+        if response.statusCode is 200
           v = v + 1
         rest.DELETE "/products/#{p.id}?version=#{v}", (error, response, body) ->
-          if response.statusCode == 200
+          if response.statusCode is 200
             deffered.resolve body
           else
             deffered.reject body
@@ -52,11 +53,11 @@ describe '#process', ->
         attachments:
           oneProduct: content
       @xmlImport.process data, (result) =>
-        expect(result.message.status).toBe true
-        expect(result.message.msg).toBe 'New product created'
+        expect(result.status).toBe true
+        expect(result.message).toBe 'New product created'
         @xmlImport.process data, (result) =>
-          expect(result.message.status).toBe true
-          expect(result.message.msg).toBe 'Nothing updated'
+          expect(result.status).toBe true
+          expect(result.message).toBe 'Nothing updated'
           @rest.GET '/products', (error, response, body) ->
             expect(response.statusCode).toBe 200
             products = JSON.parse(body).results
@@ -75,11 +76,11 @@ describe '#process', ->
         attachments:
           oneProduct: content.replace 'Short', 'Replaced'
       @xmlImport.process d, (result) =>
-        expect(result.message.status).toBe true
-        expect(result.message.msg).toBe 'New product created'
+        expect(result.status).toBe true
+        expect(result.message).toBe 'New product created'
         @xmlImport.process d2, (result) =>
-          expect(result.message.status).toBe true
-          expect(result.message.msg).toBe 'Product updated'
+          expect(result.status).toBe true
+          expect(result.message).toBe 'Product updated'
           @rest.GET '/products', (error, response, body) ->
             expect(response.statusCode).toBe 200
             products = JSON.parse(body).results

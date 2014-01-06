@@ -1,16 +1,13 @@
 Config = require '../config'
-XmlImport = require('../lib/xmlimport').XmlImport
+XmlImport = require '../lib/xmlimport'
+xmlHelpers = require '../lib/xmlhelpers'
 
 describe 'XmlImport', ->
   beforeEach ->
-    @xmlImport = new XmlImport('foo')
+    @xmlImport = new XmlImport()
 
   it 'should initialize', ->
     expect(@xmlImport).toBeDefined()
-
-  it 'should initialize with options', ->
-    expect(@xmlImport._options).toBe 'foo'
-
 
 describe 'XmlImport.process', ->
   beforeEach ->
@@ -24,8 +21,8 @@ describe 'XmlImport.process', ->
 
   it 'should call the given callback and return messge', (done) ->
     @xmlImport.process {}, (data)->
-      expect(data.message.status).toBe false
-      expect(data.message.msg).toBe 'No products given'
+      expect(data.status).toBe false
+      expect(data.message).toBe 'No products given'
       done()
 
 describe 'XmlImport.helper', ->
@@ -96,7 +93,7 @@ describe 'XmlImport.transform', ->
   <specialprice>0.000</specialprice>
 </row>'
 
-    @xmlImport.transform @xmlImport.getAndFix(rawXml), (output) ->
+    @xmlImport.transform xmlHelpers.xmlFix(rawXml), (output) ->
       expect(output.products.length).toBe 1
       p = output.products[0]
       expect(p.name.de).toBe 'Short name'
