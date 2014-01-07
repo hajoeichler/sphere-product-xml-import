@@ -1,7 +1,7 @@
 {
   "name": "sphere-product-xml-import",
   "description": "Import your products into SPHERE.IO from XML.",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "homepage": "https://github.com/hajoeichler/sphere-product-xml-import",
   "keywords": [
     "sphere",
